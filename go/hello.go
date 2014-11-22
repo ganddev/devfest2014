@@ -16,12 +16,12 @@ func init() {
 func handler(w http.ResponseWriter, r *http.Request) {
     // Create the message to be sent.
     data := map[string]interface{}{"score": "5x1", "time": "15:10"}
-    regIDs := []string{"APA91bHspbmRxp8nw846IuKSvRUg27ElSe2W1BLyPChUfyvhkyz7aun6YaV8z-reviUY4oqMQ1PNMP4_jt-n7QdSYt9e3utfHm-tByW3ticXEbHYZhHqREE4daxKuxJz2_XZgY3XwUvJCpU4g1uUqckko53-jZQfTCSAIyYWSRwFgwzU_wH0tMA"}
+    regIDs := []string{"",""}
     msg := gcm.NewMessage(data, regIDs...)
 
     c := appengine.NewContext(r)
     client := urlfetch.Client(c)
-    sender := &gcm.Sender{ApiKey: "AIzaSyAmAUW2zbbqO16zIzv5IHQc9U9ZKPnl6jI", Http: client}
+    sender := &gcm.Sender{ApiKey: "XXXXXXX", Http: client}
     // Send the message and receive the response after at most two retries.
     response, err := sender.Send(msg, 2)
     if err != nil {
