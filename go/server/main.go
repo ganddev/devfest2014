@@ -10,6 +10,7 @@ import (
         "encoding/json"
         "io/ioutil"
         "strings"
+        "github.com/satori/go.uuid"
 )
 
 type Device struct {
@@ -32,6 +33,11 @@ type Message struct {
     Type string `json: "#type"`
     Url string `json: "#url"`
   }
+
+type Notification struct {
+    Id string
+    Status string
+}
 
 type Topstories []int
 
@@ -97,7 +103,7 @@ func register(w http.ResponseWriter, r *http.Request) {
 
 
 func sendMessage(c appengine.Context, w http.ResponseWriter, deviceToken string, title string, url string) {
-    data := map[string]interface{}{"title": title, "url" : url}
+    data := map[string]interface{}{"title": title, "url" : url, "uuid" : uuid.NewV4().String()}
     regIDs := []string{deviceToken}
     msg := gcm.NewMessage(data, regIDs...)
 
@@ -109,6 +115,7 @@ func sendMessage(c appengine.Context, w http.ResponseWriter, deviceToken string,
         fmt.Fprint(w,"Failed to send message:", err)
         return
     } else {
+        datastore.Put(c, datastore.NewIncompleteKey(c, "message", nil), &data)
         fmt.Fprint(w, "Send message:" ,response)
     }
 }
