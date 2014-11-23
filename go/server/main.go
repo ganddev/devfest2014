@@ -2,7 +2,6 @@ package feedme
 
 import (
         "net/http"
-        "time"
         "fmt"
         "appengine"
         "appengine/datastore"
@@ -12,13 +11,6 @@ import (
         "io/ioutil"
         "strings"
 )
-
-// [START greeting_struct]
-type Greeting struct {
-        Author  string
-        Content string
-        Date    time.Time
-}
 
 type Device struct {
     DeviceToken string `json: "#deviceToken"`
@@ -41,9 +33,7 @@ type Message struct {
     Url string `json: "#url"`
   }
 
-  type Topstories []int
-
-// [END greeting_struct]
+type Topstories []int
 
 func init() {
         http.HandleFunc("/", root)
@@ -61,8 +51,6 @@ func deviceKey(c appengine.Context) *datastore.Key {
 func root(w http.ResponseWriter, r *http.Request) {
 
 }
-
-
 
 func register(w http.ResponseWriter, r *http.Request) {
     if r.Method == "POST" {
@@ -159,31 +147,46 @@ func fetchTopstories(w http.ResponseWriter, r *http.Request) {
     c := appengine.NewContext(r)
     client := urlfetch.Client(c)
     resp, err := client.Get("https://hacker-news.firebaseio.com/v0/topstories.json")
+    
     if err != nil {
         http.Error(w, err.Error(), http.StatusInternalServerError)
         return
     }
+
     defer resp.Body.Close()
+    
     if body, err := ioutil.ReadAll(resp.Body); err != nil {
         fmt.Fprintf(w, "Couldn't read request body: %s", err)
+    
     } else {
         dec := json.NewDecoder(strings.NewReader(string(body)))
+        
         var m Topstories
         if err := dec.Decode(&m); err != nil {
             fmt.Fprintf(w, "Couldn't decode JSON: %s", err)
         } else {
-            fmt.Fprintf(w, "Value of Param1 is: %s", m)
-            for element := range m {
-                fmt.Fprintf(w, "Value of Param1 is: %s", element)
-                fetchItem(w, r, element)
-            }
+            fmt.Fprintf(w, "VALUE : " + string(m[0]))
+            
+            fetchItem(w, r, m[0])
+
+            // for element := range m {
+            //     fmt.Fprintf(w, "Value of Param1 is: %s", element)
+            //     fetchItem(w, r, element)
+            //     break
+            // }
         }
     }
 }
+
 func fetchItem(w http.ResponseWriter, r *http.Request, itemid int){
     c := appengine.NewContext(r)
     client := urlfetch.Client(c)
-    resp, err := client.Get("https://hacker-news.firebaseio.com/v0/item/"+string(itemid)+".json?print=pretty")
+
+    siteURL := "https://hacker-news.firebaseio.com/v0/item/"+string(itemid)+".json?print=pretty"
+    fmt.Fprintf(w, "\nurl " + siteURL + "\n%i", itemid)
+
+
+    resp, err := client.Get(siteURL)
     if err != nil {
         http.Error(w, err.Error(), http.StatusInternalServerError)
         return
