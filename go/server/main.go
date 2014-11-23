@@ -29,7 +29,6 @@ type Greeting struct {
 }
 
 type User struct {
-    Username string `json: "#username"`
     DeviceToken string `json: "#devicetoken"`
     Feeds []string
 }
@@ -137,15 +136,10 @@ func users(w http.ResponseWriter, r *http.Request) {
         c := appengine.NewContext(r)
 
         fu := User {
-            Username: r.Header.Get("username"),
             DeviceToken: r.Header.Get("deviceToken"),
         }
 
-        if u := user.Current(c); u != nil {
-            fu.Username = u.String()
-        }
-
-        fmt.Fprintf(w, "Hello " + fu.Username + " device: " + fu.DeviceToken)
+        fmt.Fprintf(w, "Hello " + " device: " + fu.DeviceToken)
     } else if r.Method == "GET" {
         fmt.Fprint(w, "GETTING SHIT HERE")
     }
