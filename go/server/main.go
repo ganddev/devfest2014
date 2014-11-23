@@ -23,6 +23,10 @@ type Feed struct {
     lastEntry string
 }
 
+type PushedTopstories {
+    TopStoryID string
+}
+
 type Message struct {
     By string `json: "#by"`
     Id int  `json: "#id"`
@@ -47,6 +51,10 @@ func init() {
 
 func deviceKey(c appengine.Context) *datastore.Key {
     return datastore.NewKey(c, "Device", "default_device", 0, nil)
+}
+
+func pushedTopstoriesKey(c appengine.Context) *datastore.Key {
+    return datastore.NewKey(c, "PushedTopstories", "topstories", 0, nil)
 }
 
 func root(w http.ResponseWriter, r *http.Request) {
