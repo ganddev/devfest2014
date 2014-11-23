@@ -1,14 +1,18 @@
-package guestbook
+package feedme
 
 import (
         "html/template"
         "net/http"
         "time"
         "fmt"
+        // "os"
+    // "io"
+        // "io/ioutil"
 
         "appengine"
         "appengine/datastore"
         "appengine/user"
+        // "github.com/iand/feedparser"
 )
 
 // [START greeting_struct]
@@ -40,6 +44,25 @@ func guestbookKey(c appengine.Context) *datastore.Key {
 
 // [START func_root]
 func root(w http.ResponseWriter, r *http.Request) {
+
+        // resp, err := http.Get("http://www.feedforall.com/sample.xml")
+
+        // if err == nil {
+        //     fmt.Fprint(w, resp.Body)
+        // } else {
+        //     fmt.Fprint(w, "blergh!")
+        // }
+
+    // fe := feedparser.Feed{"asdf", "asdf", "http://www.feedforall.com/sample.xml", nil}
+    // res, err := http.NewRequest("http://www.feedforall.com/sample.xml")
+
+        // if err != nil {
+        //     fmt.Fprint(w, "error: " + err)
+        //     os.Exit(1)
+        // } else {
+        //     Feed.NewFeed(ioutil.ReadAll(response.Body))
+        // }
+
         c := appengine.NewContext(r)
         // Ancestor queries, as shown here, are strongly consistent with the High
         // Replication Datastore. Queries that span entity groups are eventually
