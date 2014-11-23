@@ -15,15 +15,9 @@ import (
 
 type Device struct {
     DeviceToken string `json: "#deviceToken"`
-    Feeds []Feed `json: "#feeds"`
 }
 
-type Feed struct {
-    url string
-    lastEntry string
-}
-
-type PushedTopstories {
+type PushedTopstories struct {
     TopStoryID string
 }
 
@@ -54,6 +48,8 @@ func init() {
         http.HandleFunc("/fetchTopstories", fetchTopstories)
 }
 
+// DataStore crap
+
 func deviceKey(c appengine.Context) *datastore.Key {
     return datastore.NewKey(c, "Device", "default_device", 0, nil)
 }
@@ -61,6 +57,8 @@ func deviceKey(c appengine.Context) *datastore.Key {
 func pushedTopstoriesKey(c appengine.Context) *datastore.Key {
     return datastore.NewKey(c, "PushedTopstories", "topstories", 0, nil)
 }
+
+
 
 func root(w http.ResponseWriter, r *http.Request) {
 
@@ -192,24 +190,34 @@ func fetchItem(w http.ResponseWriter, r *http.Request, itemid string){
     c := appengine.NewContext(r)
     client := urlfetch.Client(c)
 
+    // q := datastore.NewQuery("Device").Filter("DeviceToken =", fu.DeviceToken)
+    // qresult := q.Run(c)
+
+
     siteURL := "https://hacker-news.firebaseio.com/v0/item/"+itemid+".json?print=pretty"
     fmt.Fprintf(w, "\nurl " + siteURL + "\n%i", itemid)
-
 
     resp, err := client.Get(siteURL)
     if err != nil {
         http.Error(w, err.Error(), http.StatusInternalServerError)
         return
     }
+
     defer resp.Body.Close()
+
     if body, err := ioutil.ReadAll(resp.Body); err != nil {
         fmt.Fprintf(w, "Couldn't read request body: %s", err)
+    
     } else {
+
         dec := json.NewDecoder(strings.NewReader(string(body)))
         var m Message
+
         if err := dec.Decode(&m); err != nil {
             fmt.Fprintf(w, "Couldn't decode JSON: %s", err)
+        
         } else {
+
             fmt.Fprintf(w, "Value of Param1 is: %s", m.By)
             _, err := datastore.Put(c, datastore.NewIncompleteKey(c, "item", nil), &m)
             if err != nil {
