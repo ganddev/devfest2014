@@ -229,23 +229,23 @@ func fetchItem(w http.ResponseWriter, r *http.Request, itemid string) {
             }
         }
     }
-    }
+}
 
 
-    func sendPushNotifications(c appengine.Context, w http.ResponseWriter, title string, url string) {
-        q := datastore.NewQuery("Device")
-        t := q.Run(c)
+func sendPushNotifications(c appengine.Context, w http.ResponseWriter, title string, url string) {
+   q := datastore.NewQuery("Device")
+    t := q.Run(c)
 
-        for {
-            var dx Device
-            _, err := t.Next(&dx)
+    for {
+       var dx Device
+       _, err := t.Next(&dx)
 
-            if err == datastore.Done {
-                break;
-            }
-            if err == nil {
-                fmt.Fprintf(w, "\nSend notification to: " + dx.DeviceToken + "\n")
-                sendMessage(c, w, dx.DeviceToken, title, url) 
-            }
+        if err == datastore.Done {
+            break;
         }
-    }
+        if err == nil {
+            fmt.Fprintf(w, "\nSend notification to: " + dx.DeviceToken + "\n")
+            sendMessage(c, w, dx.DeviceToken, title, url) 
+       }
+   }
+}
