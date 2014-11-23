@@ -141,14 +141,22 @@ func users(w http.ResponseWriter, r *http.Request) {
             DeviceToken: r.Header.Get("deviceToken"),
         }
 
-        query := datastore.NewQuery("Device").Filter("DeviceToken =", fu.DeviceToken).
+        q := datastore.NewQuery("Device").Filter("DeviceToken =", fu.DeviceToken)
+        qresult := q.Run(c)
 
-        // var users []User
-        // _, err := query.GetAll(c, &users)
+        for {
+            var dev Device
+            _, err :=  qresult.Next(&dev)
 
-        // if err != nil {
-        //     fmt.Fprint(w, "BLABLA")
-        // }
+            if err == datastore.Done {
+                fmt.Fprintf(w, "No entries")
+            }
+
+            if err != nil {
+                fmt.Fprintf(w, "Geht nicht!")
+            }
+            break;
+        }
 
         key := datastore.NewIncompleteKey(c, "Device", deviceKey(c))
         _, err := datastore.Put(c, key, &fu)
