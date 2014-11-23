@@ -42,10 +42,8 @@ type Topstories []int
 func init() {
         http.HandleFunc("/", root)
         http.HandleFunc("/register", register)
-        
-        // http.HandleFunc("/send", sendNotification)
-        // http.HandleFunc("/fetch", fetchEntry)
         http.HandleFunc("/fetchTopstories", fetchTopstories)
+        http.HandleFunc("/test", testMsg)
 }
 
 // DataStore crap
@@ -58,7 +56,10 @@ func pushedTopstoriesKey(c appengine.Context) *datastore.Key {
     return datastore.NewKey(c, "PushedTopstories", "default_topstories", 0, nil)
 }
 
-
+func testMsg(w http.ResponseWriter, r *http.Request) {
+    c := appengine.NewContext(r)
+    sendPushNotifications(c, w, "test done", "http://devfest-berlin.de") 
+}
 
 func root(w http.ResponseWriter, r *http.Request) {
 
