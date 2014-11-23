@@ -11,6 +11,10 @@ import (
     "strings"
 )
 
+type Topstories struct {
+    Stories []int
+}
+
 type Message struct {
     By string `json: "#by"`
     Id int  `json: "#id"`
@@ -30,13 +34,13 @@ func init() {
 
 func handler(w http.ResponseWriter, r *http.Request) {
     // Create the message to be sent.
-    data := map[string]interface{}{"score": "5x1", "time": "15:10"}
-    regIDs := []string{"",""}
+    data := map[string]interface{}{"score": "7x1", "time": "15:10"}
+    regIDs := []string{"APA91bHspbmRxp8nw846IuKSvRUg27ElSe2W1BLyPChUfyvhkyz7aun6YaV8z-reviUY4oqMQ1PNMP4_jt-n7QdSYt9e3utfHm-tByW3ticXEbHYZhHqREE4daxKuxJz2_XZgY3XwUvJCpU4g1uUqckko53-jZQfTCSAIyYWSRwFgwzU_wH0tMA"}
     msg := gcm.NewMessage(data, regIDs...)
 
     c := appengine.NewContext(r)
     client := urlfetch.Client(c)
-    sender := &gcm.Sender{ApiKey: "XXXXXXX", Http: client}
+    sender := &gcm.Sender{ApiKey: "AIzaSyAmAUW2zbbqO16zIzv5IHQc9U9ZKPnl6jI", Http: client}
     // Send the message and receive the response after at most two retries.
     response, err := sender.Send(msg, 2)
     if err != nil {
@@ -50,7 +54,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 func handler2(w http.ResponseWriter, r *http.Request) {
     c := appengine.NewContext(r)
     client := urlfetch.Client(c)
-    resp, err := client.Get("https://hacker-news.firebaseio.com/v0/item/8863.json?print=pretty")
+    resp, err := client.Get("https://hacker-news.firebaseio.com/v0/topstories")
     if err != nil {
         http.Error(w, err.Error(), http.StatusInternalServerError)
         return
@@ -60,11 +64,11 @@ func handler2(w http.ResponseWriter, r *http.Request) {
         fmt.Fprintf(w, "Couldn't read request body: %s", err)
     } else {
         dec := json.NewDecoder(strings.NewReader(string(body)))
-        var m Message
+        var m Topstories
         if err := dec.Decode(&m); err != nil {
             fmt.Fprintf(w, "Couldn't decode JSON: %s", err)
         } else {
-            fmt.Fprintf(w, "Value of Param1 is: %s", m.By)
+            fmt.Fprintf(w, "Value of Param1 is: %s", m.Stories)
         }
     }
 }

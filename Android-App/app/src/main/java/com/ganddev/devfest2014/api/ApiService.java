@@ -27,7 +27,7 @@ public class ApiService {
     {
         JSONObject obj = new JSONObject();
         try {
-            obj.put("GCM_REGISTRATION_ID", regId);
+            obj.put("devicetoken", regId);
         } catch (JSONException e) {
             Log.e(TAG, e.getMessage());
         }
@@ -35,7 +35,9 @@ public class ApiService {
         JsonObjectRequest request = new JsonObjectRequest(Request.Method.POST,ctx.getString(R.string.api_gcm),obj, new Response.Listener<JSONObject>() {
             @Override
             public void onResponse(JSONObject response) {
-
+                if(response != null) {
+                    Log.i(TAG, "Response: " + response.toString());
+                }
             }
         }, new Response.ErrorListener() {
             @Override
