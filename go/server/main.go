@@ -10,6 +10,7 @@ import (
         "encoding/json"
         "io/ioutil"
         "strings"
+        // "strconv"
 )
 
 type Device struct {
@@ -165,24 +166,19 @@ func fetchTopstories(w http.ResponseWriter, r *http.Request) {
         if err := dec.Decode(&m); err != nil {
             fmt.Fprintf(w, "Couldn't decode JSON: %s", err)
         } else {
-            fmt.Fprintf(w, "VALUE : " + string(m[0]))
-            
-            fetchItem(w, r, m[0])
 
-            // for element := range m {
-            //     fmt.Fprintf(w, "Value of Param1 is: %s", element)
-            //     fetchItem(w, r, element)
-            //     break
-            // }
+            sxs := fmt.Sprintf("%d", m[0])
+            
+            fetchItem(w, r, sxs)
         }
     }
 }
 
-func fetchItem(w http.ResponseWriter, r *http.Request, itemid int){
+func fetchItem(w http.ResponseWriter, r *http.Request, itemid string){
     c := appengine.NewContext(r)
     client := urlfetch.Client(c)
 
-    siteURL := "https://hacker-news.firebaseio.com/v0/item/"+string(itemid)+".json?print=pretty"
+    siteURL := "https://hacker-news.firebaseio.com/v0/item/"+itemid+".json?print=pretty"
     fmt.Fprintf(w, "\nurl " + siteURL + "\n%i", itemid)
 
 
