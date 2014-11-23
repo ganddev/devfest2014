@@ -47,7 +47,7 @@ func init() {
         http.HandleFunc("/", root)
         http.HandleFunc("/register", register)
         
-        http.HandleFunc("/send", sendNotification)
+        // http.HandleFunc("/send", sendNotification)
         http.HandleFunc("/fetch", fetchEntry)
 }
 
@@ -105,18 +105,14 @@ func register(w http.ResponseWriter, r *http.Request) {
 }
 
 
-
-
-func sendNotification(w http.ResponseWriter, r *http.Request) {
-    // Create the message to be sent.
-    data := map[string]interface{}{"score": "MÜLL!!!", "time": "15:10"}
-    regIDs := []string{"APA91bHspbmRxp8nw846IuKSvRUg27ElSe2W1BLyPChUfyvhkyz7aun6YaV8z-reviUY4oqMQ1PNMP4_jt-n7QdSYt9e3utfHm-tByW3ticXEbHYZhHqREE4daxKuxJz2_XZgY3XwUvJCpU4g1uUqckko53-jZQfTCSAIyYWSRwFgwzU_wH0tMA"}
+func sendMessage(c appengine.Context, w http.ResponseWriter, deviceToken string, title string, url string) {
+    data := map[string]interface{}{"title": title, "url" : url}
+    regIDs := []string{deviceToken}
     msg := gcm.NewMessage(data, regIDs...)
 
-    c := appengine.NewContext(r)
     client := urlfetch.Client(c)
     sender := &gcm.Sender{ApiKey: "AIzaSyAmAUW2zbbqO16zIzv5IHQc9U9ZKPnl6jI", Http: client}
-    // Send the message and receive the response after at most two retries.
+     
     response, err := sender.Send(msg, 2)
     if err != nil {
         fmt.Fprint(w,"Failed to send message:", err)
@@ -128,6 +124,8 @@ func sendNotification(w http.ResponseWriter, r *http.Request) {
 
 func fetchEntry(w http.ResponseWriter, r *http.Request) {
     c := appengine.NewContext(r)
+    sendMessage(c, w, "APA91bHUV33aJbJlAZeeRALozg5vegfgSdUMpE1gyOgDeYTdfoHytSAM_4dLpDkKLbcmUfgh6XysK3cP4MpcH5jy5AbPeyNY32T1uOzmlIVtO2E0W-a3KJGgZXMNUCgH2U1lody9JQjb5usbPtfRrj1VI1Us_YkHICCRfbfeI0y7PF0r40SmFD0", "Geilo", "http://istdasgeil.de")
+
     client := urlfetch.Client(c)
     resp, err := client.Get("https://hacker-news.firebaseio.com/v0/item/8863.json?print=pretty")
     if err != nil {
@@ -140,10 +138,12 @@ func fetchEntry(w http.ResponseWriter, r *http.Request) {
     } else {
         dec := json.NewDecoder(strings.NewReader(string(body)))
         var m Message
+        
         if err := dec.Decode(&m); err != nil {
             fmt.Fprintf(w, "Couldn't decode JSON: %s", err)
         } else {
             fmt.Fprintf(w, "Value of Param1 is: %s", m.By)
         }
+
     }
 }
