@@ -58,7 +58,7 @@ func pushedTopstoriesKey(c appengine.Context) *datastore.Key {
 
 func testMsg(w http.ResponseWriter, r *http.Request) {
     c := appengine.NewContext(r)
-    sendPushNotifications(c, w, "test done", "http://devfest-berlin.de") 
+    sendPushNotifications(c, w, "7 Rules for Creating Gorgeous UI (Part 2)", "https://medium.com/@erikdkennedy/7-rules-for-creating-gorgeous-ui-part-2-430de537ba96") 
 }
 
 func root(w http.ResponseWriter, r *http.Request) {
