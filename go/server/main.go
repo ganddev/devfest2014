@@ -218,19 +218,11 @@ func fetchItem(w http.ResponseWriter, r *http.Request, itemid string) {
         
         } else {
 
-            fmt.Fprintf(w, "Value of Param1 is: %s", m.By)
+            fmt.Fprintf(w, "Push Title: %s  URL: %s", m.Title, m.Url)
             sendPushNotifications(c, w, m.Title, m.Url)
-
-            _, err := datastore.Put(c, datastore.NewIncompleteKey(c, "item", nil), &m)
-            
-            if err != nil {
-                http.Error(w, err.Error(), http.StatusInternalServerError)
-                return
-            }
         }
     }
 }
-
 
 func sendPushNotifications(c appengine.Context, w http.ResponseWriter, title string, url string) {
    q := datastore.NewQuery("Device")
