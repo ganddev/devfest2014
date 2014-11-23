@@ -6,10 +6,25 @@ import (
     "appengine"
     "appengine/urlfetch"
     "github.com/alexjlockwood/gcm"
+    "encoding/json"
+    "io/ioutil"
+    "strings"
 )
+
+type Message struct {
+    By string `json: "#by"`
+    Id int  `json: "#id"`
+    Kids []int `json: "#kids"`
+    Score int `json: "#score"`
+    Time int64  `json: "#time"`
+    Title string `json: "#title"`
+    Popel string `json: "#type"`
+    Url string `json: "#url"`
+  }
 
 func init() {
     http.HandleFunc("/send", handler)
+    http.HandleFunc("/fetch", handler2)
 }
 
 
@@ -29,5 +44,27 @@ func handler(w http.ResponseWriter, r *http.Request) {
         return
     } else {
         fmt.Fprint(w, "Send message:" ,response)
+    }
+}
+
+func handler2(w http.ResponseWriter, r *http.Request) {
+    c := appengine.NewContext(r)
+    client := urlfetch.Client(c)
+    resp, err := client.Get("https://hacker-news.firebaseio.com/v0/item/8863.json?print=pretty")
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
+    }
+    defer resp.Body.Close()
+    if body, err := ioutil.ReadAll(resp.Body); err != nil {
+        fmt.Fprintf(w, "Couldn't read request body: %s", err)
+    } else {
+        dec := json.NewDecoder(strings.NewReader(string(body)))
+        var m Message
+        if err := dec.Decode(&m); err != nil {
+            fmt.Fprintf(w, "Couldn't decode JSON: %s", err)
+        } else {
+            fmt.Fprintf(w, "Value of Param1 is: %s", m.By)
+        }
     }
 }

@@ -1,0 +1,4 @@
+cron:
+- description: Fetch  hackernews
+  url: /fetch
+  schedule: every 1 mins
