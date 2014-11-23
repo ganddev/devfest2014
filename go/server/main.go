@@ -28,9 +28,8 @@ type Greeting struct {
         Date    time.Time
 }
 
-type User struct {
-    DeviceToken string `json: "#devicetoken"`
-    Feeds []string
+type Device struct {
+    DeviceToken string
 }
 
 type Message struct {
@@ -55,8 +54,8 @@ func init() {
         http.HandleFunc("/fetch", fetchEntry)
 }
 
-func userKey(c appengine.Context) *datastore.Key {
-    return datastore.NewKey(c, "User", "users", 0, nil)
+func deviceKey(c appengine.Context) *datastore.Key {
+    return datastore.NewKey(c, "Device", "default_device", 0, nil)
 }
 
 // guestbookKey returns the key used for all guestbook entries.
@@ -138,13 +137,22 @@ var guestbookTemplate = template.Must(template.New("book").Parse(`
 func users(w http.ResponseWriter, r *http.Request) {
     if r.Method == "POST" {
         c := appengine.NewContext(r)
-
-        fu := User {
+        fu := Device{
             DeviceToken: r.Header.Get("deviceToken"),
         }
 
-        key := datastore.NewIncompleteKey(c, "User", userKey(c))
+        // query := datastore.NewQuery("User").Filter("DeviceToken =", fu.DeviceToken).
+
+        // var users []User
+        // _, err := query.GetAll(c, &users)
+
+        // if err != nil {
+        //     fmt.Fprint(w, "BLABLA")
+        // }
+
+        key := datastore.NewIncompleteKey(c, "Device", deviceKey(c))
         _, err := datastore.Put(c, key, &fu)
+        
         if err != nil {
                 http.Error(w, err.Error(), http.StatusInternalServerError)
                 return
