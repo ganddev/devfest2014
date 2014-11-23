@@ -18,7 +18,7 @@ type Device struct {
 }
 
 type PushedTopstories struct {
-    TopStoryID string
+    TopStory string
 }
 
 type Message struct {
@@ -33,8 +33,8 @@ type Message struct {
   }
 
 type Notification struct {
-    Id string `json: "#notification_id"`
-    Status string `json: "#status"`
+    Id string
+    Status string
 }
 
 type Topstories []int
@@ -44,9 +44,8 @@ func init() {
         http.HandleFunc("/register", register)
         
         // http.HandleFunc("/send", sendNotification)
-        http.HandleFunc("/fetch", fetchEntry)
+        // http.HandleFunc("/fetch", fetchEntry)
         http.HandleFunc("/fetchTopstories", fetchTopstories)
-        http.HandleFunc("/updateNotifcationStatus", updateNotifcationStatus)
 }
 
 // DataStore crap
@@ -56,12 +55,9 @@ func deviceKey(c appengine.Context) *datastore.Key {
 }
 
 func pushedTopstoriesKey(c appengine.Context) *datastore.Key {
-    return datastore.NewKey(c, "PushedTopstories", "topstories", 0, nil)
+    return datastore.NewKey(c, "PushedTopstories", "default_topstories", 0, nil)
 }
 
-func notificationKey(c appengine.Context) *datastore.Key {
-    return datastore.NewKey(c, "Notification", "notification_id", 0, nil)
-}
 
 
 func root(w http.ResponseWriter, r *http.Request) {
@@ -91,6 +87,8 @@ func register(w http.ResponseWriter, r *http.Request) {
                 key := datastore.NewIncompleteKey(c, "Device", deviceKey(c))
                 _, err := datastore.Put(c, key, &fu)
         
+                sendMessage(c, w, fu.DeviceToken, "Registration completed!", "http://devfest-berlin.de") 
+
                 if err != nil {
                     http.Error(w, err.Error(), http.StatusInternalServerError)
                     return
@@ -113,8 +111,7 @@ func register(w http.ResponseWriter, r *http.Request) {
 
 
 func sendMessage(c appengine.Context, w http.ResponseWriter, deviceToken string, title string, url string) {
-    uuid := uuid.NewV4().String()
-    data := map[string]interface{}{"title": title, "url" : url, "uuid" : uuid}
+    data := map[string]interface{}{"title": title, "url" : url, "uuid" : uuid.NewV4().String()}
     regIDs := []string{deviceToken}
     msg := gcm.NewMessage(data, regIDs...)
 
@@ -126,62 +123,8 @@ func sendMessage(c appengine.Context, w http.ResponseWriter, deviceToken string,
         fmt.Fprint(w,"Failed to send message:", err)
         return
     } else {
-        fu := Notification{
-            Id: uuid,
-            Status: "send",
-        }
-        key := notificationKey(c)
-        _, err := datastore.Put(c, key, &fu)
-        if err != nil {
-            http.Error(w, err.Error(), http.StatusInternalServerError)
-                return
-        }
+        datastore.Put(c, datastore.NewIncompleteKey(c, "message", nil), &data)
         fmt.Fprint(w, "Send message:" ,response)
-    }
-}
-
-func updateNotifcationStatus(w http.ResponseWriter, r *http.Request) {
-    if r.Method == "POST" {
-        c := appengine.NewContext(r)
-        decoder := json.NewDecoder(r.Body)
-        var t Notification   
-        err := decoder.Decode(&t)
-        if err != nil {
-            http.Error(w, err.Error(), http.StatusInternalServerError)
-        }
-        key := notificationKey(c)
-        _, err = datastore.Put(c, key ,&t)
-    }
-    return
-}
-
-func fetchEntry(w http.ResponseWriter, r *http.Request) {
-    c := appengine.NewContext(r)
-    sendMessage(c, w, "APA91bHUV33aJbJlAZeeRALozg5vegfgSdUMpE1gyOgDeYTdfoHytSAM_4dLpDkKLbcmUfgh6XysK3cP4MpcH5jy5AbPeyNY32T1uOzmlIVtO2E0W-a3KJGgZXMNUCgH2U1lody9JQjb5usbPtfRrj1VI1Us_YkHICCRfbfeI0y7PF0r40SmFD0", "Geilo", "http://istdasgeil.de")
-
-    client := urlfetch.Client(c)
-    resp, err := client.Get("https://hacker-news.firebaseio.com/v0/item/8863.json?print=pretty")
-    if err != nil {
-        http.Error(w, err.Error(), http.StatusInternalServerError)
-        return
-    }
-    defer resp.Body.Close()
-    if body, err := ioutil.ReadAll(resp.Body); err != nil {
-        fmt.Fprintf(w, "Couldn't read request body: %s", err)
-    } else {
-        dec := json.NewDecoder(strings.NewReader(string(body)))
-        var m Message
-        
-        if err := dec.Decode(&m); err != nil {
-            fmt.Fprintf(w, "Couldn't decode JSON: %s", err)
-        } else {
-            fmt.Fprintf(w, "Value of Param1 is: %s", m.By)
-            _, err := datastore.Put(c, datastore.NewIncompleteKey(c, "item", nil), &m)
-            if err != nil {
-                http.Error(w, err.Error(), http.StatusInternalServerError)
-                return
-            }
-        }
     }
 }
 
@@ -215,18 +158,46 @@ func fetchTopstories(w http.ResponseWriter, r *http.Request) {
     }
 }
 
-func fetchItem(w http.ResponseWriter, r *http.Request, itemid string){
+func fetchItem(w http.ResponseWriter, r *http.Request, itemid string) {
     c := appengine.NewContext(r)
     client := urlfetch.Client(c)
 
-    // q := datastore.NewQuery("Device").Filter("DeviceToken =", fu.DeviceToken)
-    // qresult := q.Run(c)
+    fu := PushedTopstories{
+        TopStory: itemid,
+    }
+    //Check if pushed already
+    q := datastore.NewQuery("PushedTopstories").Filter("TopStory =", fu.TopStory)
+    qresult := q.Run(c)
 
+    for {
+            var pts PushedTopstories
+            _, err := qresult.Next(&pts)
+
+            if err == datastore.Done {
+                fmt.Fprintf(w, "Not in list! ID: " + fu.TopStory)
+
+                //Store device
+                key := datastore.NewIncompleteKey(c, "PushedTopstories", pushedTopstoriesKey(c))
+                _, err := datastore.Put(c, key, &fu)
+        
+                if err != nil {
+                    http.Error(w, err.Error(), http.StatusInternalServerError)
+                    return
+                }
+                break
+            }
+            
+            //Item found: goodbye
+            if err == nil {
+                break
+            }
+        }
 
     siteURL := "https://hacker-news.firebaseio.com/v0/item/"+itemid+".json?print=pretty"
     fmt.Fprintf(w, "\nurl " + siteURL + "\n%i", itemid)
 
     resp, err := client.Get(siteURL)
+    
     if err != nil {
         http.Error(w, err.Error(), http.StatusInternalServerError)
         return
@@ -247,13 +218,27 @@ func fetchItem(w http.ResponseWriter, r *http.Request, itemid string){
         
         } else {
 
-            fmt.Fprintf(w, "Value of Param1 is: %s", m.By)
-            _, err := datastore.Put(c, datastore.NewIncompleteKey(c, "item", nil), &m)
-            if err != nil {
-                http.Error(w, err.Error(), http.StatusInternalServerError)
-                return
-            }
+            fmt.Fprintf(w, "Push Title: %s  URL: %s", m.Title, m.Url)
+            sendPushNotifications(c, w, m.Title, m.Url)
+        }
+    }
+}
+
+func sendPushNotifications(c appengine.Context, w http.ResponseWriter, title string, url string) {
+   q := datastore.NewQuery("Device")
+    t := q.Run(c)
+
+    for {
+       var dx Device
+       _, err := t.Next(&dx)
+
+        if err != nil {
+            break;
         }
 
-    }
+        if err == nil {
+            fmt.Fprintf(w, "\nSend notification to: " + dx.DeviceToken + "\n")
+            sendMessage(c, w, dx.DeviceToken, title, url) 
+       }
+   }
 }
