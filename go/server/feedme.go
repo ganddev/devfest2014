@@ -85,18 +85,22 @@ var guestbookTemplate = template.Must(template.New("book").Parse(`
 `))
 
 func users(w http.ResponseWriter, r *http.Request) {
-    c := appengine.NewContext(r)
+    if r.Method == "POST" {
+        c := appengine.NewContext(r)
 
-    fu := User {
-        Username: r.Header.Get("username"),
-        DeviceToken: r.Header.Get("deviceToken"),
+        fu := User {
+            Username: r.Header.Get("username"),
+            DeviceToken: r.Header.Get("deviceToken"),
+        }
+
+        if u := user.Current(c); u != nil {
+            fu.Username = u.String()
+        }
+
+        fmt.Fprintf(w, "Hello " + fu.Username + " device: " + fu.DeviceToken)
+    } else if r.Method == "GET" {
+        fmt.Fprint(w, "GETTING SHIT HERE")
     }
-
-    if u := user.Current(c); u != nil {
-        fu.Username = u.String()
-    }
-
-    fmt.Fprintf(w, "Hello " + fu.Username + " device: " + fu.DeviceToken)
 }
 
 // [START func_sign]
@@ -110,7 +114,7 @@ func sign(w http.ResponseWriter, r *http.Request) {
                 g.Author = u.String()
         }
 
-        
+
         // We set the same parent key on every Greeting entity to ensure each Greeting
         // is in the same entity group. Queries across the single entity group
         // will be consistent. However, the write rate to a single entity group
