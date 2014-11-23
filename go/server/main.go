@@ -33,8 +33,8 @@ type Message struct {
   }
 
 type Notification struct {
-    Id string
-    Status string
+    Id string `json: "#notification_id"`
+    Status string `json: "#status"`
 }
 
 type Topstories []int
@@ -46,6 +46,7 @@ func init() {
         // http.HandleFunc("/send", sendNotification)
         http.HandleFunc("/fetch", fetchEntry)
         http.HandleFunc("/fetchTopstories", fetchTopstories)
+        http.HandleFunc("/updateNotifcationStatus", updateNotifcationStatus)
 }
 
 // DataStore crap
@@ -58,6 +59,9 @@ func pushedTopstoriesKey(c appengine.Context) *datastore.Key {
     return datastore.NewKey(c, "PushedTopstories", "topstories", 0, nil)
 }
 
+func notificationKey(c appengine.Context) *datastore.Key {
+    return datastore.NewKey(c, "Notification", "notification_id", 0, nil)
+}
 
 
 func root(w http.ResponseWriter, r *http.Request) {
@@ -109,7 +113,8 @@ func register(w http.ResponseWriter, r *http.Request) {
 
 
 func sendMessage(c appengine.Context, w http.ResponseWriter, deviceToken string, title string, url string) {
-    data := map[string]interface{}{"title": title, "url" : url, "uuid" : uuid.NewV4().String()}
+    uuid := uuid.NewV4().String()
+    data := map[string]interface{}{"title": title, "url" : url, "uuid" : uuid}
     regIDs := []string{deviceToken}
     msg := gcm.NewMessage(data, regIDs...)
 
@@ -121,9 +126,33 @@ func sendMessage(c appengine.Context, w http.ResponseWriter, deviceToken string,
         fmt.Fprint(w,"Failed to send message:", err)
         return
     } else {
-        datastore.Put(c, datastore.NewIncompleteKey(c, "message", nil), &data)
+        fu := Notification{
+            Id: uuid,
+            Status: "send",
+        }
+        key := notificationKey(c)
+        _, err := datastore.Put(c, key, &fu)
+        if err != nil {
+            http.Error(w, err.Error(), http.StatusInternalServerError)
+                return
+        }
         fmt.Fprint(w, "Send message:" ,response)
     }
+}
+
+func updateNotifcationStatus(w http.ResponseWriter, r *http.Request) {
+    if r.Method == "POST" {
+        c := appengine.NewContext(r)
+        decoder := json.NewDecoder(r.Body)
+        var t Notification   
+        err := decoder.Decode(&t)
+        if err != nil {
+            http.Error(w, err.Error(), http.StatusInternalServerError)
+        }
+        key := notificationKey(c)
+        _, err = datastore.Put(c, key ,&t)
+    }
+    return
 }
 
 func fetchEntry(w http.ResponseWriter, r *http.Request) {
