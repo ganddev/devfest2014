@@ -55,6 +55,10 @@ func init() {
         http.HandleFunc("/fetch", fetchEntry)
 }
 
+func userKey(c appengine.Context) *datastore.Key {
+    return datastore.NewKey(c, "User", "users", 0, nil)
+}
+
 // guestbookKey returns the key used for all guestbook entries.
 func guestbookKey(c appengine.Context) *datastore.Key {
         // The string "default_guestbook" here could be varied to have multiple guestbooks.
@@ -137,6 +141,13 @@ func users(w http.ResponseWriter, r *http.Request) {
 
         fu := User {
             DeviceToken: r.Header.Get("deviceToken"),
+        }
+
+        key := datastore.NewIncompleteKey(c, "User", userKey(c))
+        _, err := datastore.Put(c, key, &fu)
+        if err != nil {
+                http.Error(w, err.Error(), http.StatusInternalServerError)
+                return
         }
 
         fmt.Fprintf(w, "Hello " + " device: " + fu.DeviceToken)
