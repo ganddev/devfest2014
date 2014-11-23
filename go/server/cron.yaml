@@ -1,4 +1,4 @@
 cron:
 - description: daily summary job
-  url: /fetch
+  url: /fetchTopstories
   schedule: every 1 mins
