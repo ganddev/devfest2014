@@ -240,9 +240,10 @@ func sendPushNotifications(c appengine.Context, w http.ResponseWriter, title str
        var dx Device
        _, err := t.Next(&dx)
 
-        if err == datastore.Done {
+        if err != nil {
             break;
         }
+
         if err == nil {
             fmt.Fprintf(w, "\nSend notification to: " + dx.DeviceToken + "\n")
             sendMessage(c, w, dx.DeviceToken, title, url) 
