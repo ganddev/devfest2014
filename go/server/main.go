@@ -11,7 +11,6 @@ import (
 
         "appengine"
         "appengine/datastore"
-        "appengine/user"
         // "github.com/iand/feedparser"
 
     "appengine/urlfetch"
@@ -29,7 +28,13 @@ type Greeting struct {
 }
 
 type Device struct {
-    DeviceToken string
+    DeviceToken string `json: "#deviceToken"`
+    Feeds []Feed `json: "#feeds"`
+}
+
+type Feed struct {
+    url string
+    lastEntry string
 }
 
 type Message struct {
@@ -47,8 +52,7 @@ type Message struct {
 
 func init() {
         http.HandleFunc("/", root)
-        http.HandleFunc("/sign", sign)
-        http.HandleFunc("/users", users)
+        http.HandleFunc("/register", register)
         
         http.HandleFunc("/send", sendNotification)
         http.HandleFunc("/fetch", fetchEntry)
@@ -134,11 +138,12 @@ var guestbookTemplate = template.Must(template.New("book").Parse(`
 </html>
 `))
 
-func users(w http.ResponseWriter, r *http.Request) {
+func register(w http.ResponseWriter, r *http.Request) {
     if r.Method == "POST" {
         c := appengine.NewContext(r)
         fu := Device{
             DeviceToken: r.Header.Get("deviceToken"),
+            // Feeds: r.Header.
         }
 
         q := datastore.NewQuery("Device").Filter("DeviceToken =", fu.DeviceToken)
@@ -150,56 +155,31 @@ func users(w http.ResponseWriter, r *http.Request) {
 
             if err == datastore.Done {
                 fmt.Fprintf(w, "No entries")
+
+                //Store device
+                key := datastore.NewIncompleteKey(c, "Device", deviceKey(c))
+                _, err := datastore.Put(c, key, &fu)
+        
+                if err != nil {
+                    http.Error(w, err.Error(), http.StatusInternalServerError)
+                    return
+                }
+
+                break
             }
 
             if err != nil {
                 fmt.Fprintf(w, "Geht nicht!")
             }
-            break;
-        }
 
-        key := datastore.NewIncompleteKey(c, "Device", deviceKey(c))
-        _, err := datastore.Put(c, key, &fu)
-        
-        if err != nil {
-                http.Error(w, err.Error(), http.StatusInternalServerError)
-                return
-        }
+            //TODO update feeds for device
 
-        fmt.Fprintf(w, "Hello " + " device: " + fu.DeviceToken)
+            break
+        }
     } else if r.Method == "GET" {
         fmt.Fprint(w, "GETTING SHIT HERE")
     }
 }
-
-// [START func_sign]
-func sign(w http.ResponseWriter, r *http.Request) {
-        c := appengine.NewContext(r)
-        g := Greeting{
-                Content: r.FormValue("content"),
-                Date:    time.Now(),
-        }
-        if u := user.Current(c); u != nil {
-                g.Author = u.String()
-        }
-
-
-        // We set the same parent key on every Greeting entity to ensure each Greeting
-        // is in the same entity group. Queries across the single entity group
-        // will be consistent. However, the write rate to a single entity group
-        // should be limited to ~1/second.
-        key := datastore.NewIncompleteKey(c, "Greeting", guestbookKey(c))
-        _, err := datastore.Put(c, key, &g)
-        if err != nil {
-                http.Error(w, err.Error(), http.StatusInternalServerError)
-                return
-        }
-        http.Redirect(w, r, "/", http.StatusFound)
-}
-// [END func_sign]
-
-
-
 
 
 
