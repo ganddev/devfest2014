@@ -1,0 +1,4 @@
+cron:
+- description: daily summary job
+  url: /fetch
+  schedule: every 1 mins

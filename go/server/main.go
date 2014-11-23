@@ -43,6 +43,8 @@ type Message struct {
     Url string `json: "#url"`
   }
 
+  type Topstories []int
+
 // [END greeting_struct]
 
 func init() {
@@ -52,6 +54,7 @@ func init() {
         
         http.HandleFunc("/send", sendNotification)
         http.HandleFunc("/fetch", fetchEntry)
+        http.HandleFunc("/fetchTopstories", fetchTopstories)
 }
 
 func deviceKey(c appengine.Context) *datastore.Key {
@@ -241,6 +244,63 @@ func fetchEntry(w http.ResponseWriter, r *http.Request) {
             fmt.Fprintf(w, "Couldn't decode JSON: %s", err)
         } else {
             fmt.Fprintf(w, "Value of Param1 is: %s", m.By)
+            _, err := datastore.Put(c, datastore.NewIncompleteKey(c, "item", nil), &m)
+            if err != nil {
+                http.Error(w, err.Error(), http.StatusInternalServerError)
+                return
+            }
+        }
+    }
+}
+
+func fetchTopstories(w http.ResponseWriter, r *http.Request) {
+    c := appengine.NewContext(r)
+    client := urlfetch.Client(c)
+    resp, err := client.Get("https://hacker-news.firebaseio.com/v0/topstories.json")
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
+    }
+    defer resp.Body.Close()
+    if body, err := ioutil.ReadAll(resp.Body); err != nil {
+        fmt.Fprintf(w, "Couldn't read request body: %s", err)
+    } else {
+        dec := json.NewDecoder(strings.NewReader(string(body)))
+        var m Topstories
+        if err := dec.Decode(&m); err != nil {
+            fmt.Fprintf(w, "Couldn't decode JSON: %s", err)
+        } else {
+            fmt.Fprintf(w, "Value of Param1 is: %s", m)
+            for element := range m {
+                fmt.Fprintf(w, "Value of Param1 is: %s", element)
+                fetchItem(w, r, element)
+            }
+        }
+    }
+}
+func fetchItem(w http.ResponseWriter, r *http.Request, itemid int){
+    c := appengine.NewContext(r)
+    client := urlfetch.Client(c)
+    resp, err := client.Get("https://hacker-news.firebaseio.com/v0/item/"+string(itemid)+".json?print=pretty")
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
+    }
+    defer resp.Body.Close()
+    if body, err := ioutil.ReadAll(resp.Body); err != nil {
+        fmt.Fprintf(w, "Couldn't read request body: %s", err)
+    } else {
+        dec := json.NewDecoder(strings.NewReader(string(body)))
+        var m Message
+        if err := dec.Decode(&m); err != nil {
+            fmt.Fprintf(w, "Couldn't decode JSON: %s", err)
+        } else {
+            fmt.Fprintf(w, "Value of Param1 is: %s", m.By)
+            _, err := datastore.Put(c, datastore.NewIncompleteKey(c, "item", nil), &m)
+            if err != nil {
+                http.Error(w, err.Error(), http.StatusInternalServerError)
+                return
+            }
         }
     }
 }

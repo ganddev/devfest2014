@@ -9,6 +9,7 @@ import com.android.volley.toolbox.JsonArrayRequest;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.ganddev.devfest2014.DevFestApp;
 import com.ganddev.devfest2014.R;
+import com.ganddev.devfest2014.utils.CustomRequest;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -25,14 +26,8 @@ public class ApiService {
 
     public static void postGCMRegId(final String regId)
     {
-        JSONObject obj = new JSONObject();
-        try {
-            obj.put("devicetoken", regId);
-        } catch (JSONException e) {
-            Log.e(TAG, e.getMessage());
-        }
 
-        JsonObjectRequest request = new JsonObjectRequest(Request.Method.POST,ctx.getString(R.string.api_gcm),obj, new Response.Listener<JSONObject>() {
+        CustomRequest request = new CustomRequest(Request.Method.POST,ctx.getString(R.string.api_gcm),null, new Response.Listener<JSONObject>() {
             @Override
             public void onResponse(JSONObject response) {
                 if(response != null) {
@@ -46,7 +41,7 @@ public class ApiService {
                     Log.e(TAG, error.getMessage());
                 }
             }
-        });
+        }, ctx, regId);
         ctx.addToRequestQueue(request);
     }
 
