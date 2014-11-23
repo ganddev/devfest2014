@@ -17,6 +17,13 @@ type Greeting struct {
         Content string
         Date    time.Time
 }
+
+type User struct {
+    Username string
+    DeviceToken string
+    Feeds []string
+}
+
 // [END greeting_struct]
 
 func init() {
@@ -78,12 +85,18 @@ var guestbookTemplate = template.Must(template.New("book").Parse(`
 `))
 
 func users(w http.ResponseWriter, r *http.Request) {
-    // c := appengine.NewContext(r)
+    c := appengine.NewContext(r)
 
-    name := r.Header.Get("username")
-    test := r.Header.Get("test")
+    fu := User {
+        Username: r.Header.Get("username"),
+        DeviceToken: r.Header.Get("deviceToken"),
+    }
 
-    fmt.Fprintf(w, "Hello" + name + " " + test)
+    if u := user.Current(c); u != nil {
+        fu.Username = u.String()
+    }
+
+    fmt.Fprintf(w, "Hello " + fu.Username + " device: " + fu.DeviceToken)
 }
 
 // [START func_sign]
@@ -96,6 +109,8 @@ func sign(w http.ResponseWriter, r *http.Request) {
         if u := user.Current(c); u != nil {
                 g.Author = u.String()
         }
+
+        
         // We set the same parent key on every Greeting entity to ensure each Greeting
         // is in the same entity group. Queries across the single entity group
         // will be consistent. However, the write rate to a single entity group
