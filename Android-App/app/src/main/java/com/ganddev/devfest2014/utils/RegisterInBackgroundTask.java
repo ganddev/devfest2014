@@ -63,6 +63,6 @@ public class RegisterInBackgroundTask extends AsyncTask<Void, Void, String > {
     @Override
     protected void onPostExecute(String msg) {
         Log.d(TAG, "REG_ID: " +msg);
-        //mDisplay.append(msg + "\n");
+        ApiService.postGCMRegId(msg);
     }
 }
