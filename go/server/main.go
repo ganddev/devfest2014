@@ -141,7 +141,7 @@ func users(w http.ResponseWriter, r *http.Request) {
             DeviceToken: r.Header.Get("deviceToken"),
         }
 
-        // query := datastore.NewQuery("User").Filter("DeviceToken =", fu.DeviceToken).
+        query := datastore.NewQuery("Device").Filter("DeviceToken =", fu.DeviceToken).
 
         // var users []User
         // _, err := query.GetAll(c, &users)
