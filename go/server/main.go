@@ -18,7 +18,7 @@ type Device struct {
 }
 
 type PushedTopstories struct {
-    TopStoryID string
+    TopStory string
 }
 
 type Message struct {
@@ -55,7 +55,7 @@ func deviceKey(c appengine.Context) *datastore.Key {
 }
 
 func pushedTopstoriesKey(c appengine.Context) *datastore.Key {
-    return datastore.NewKey(c, "PushedTopstories", "topstories", 0, nil)
+    return datastore.NewKey(c, "PushedTopstories", "default_topstories", 0, nil)
 }
 
 
@@ -190,9 +190,36 @@ func fetchItem(w http.ResponseWriter, r *http.Request, itemid string){
     c := appengine.NewContext(r)
     client := urlfetch.Client(c)
 
-    // q := datastore.NewQuery("Device").Filter("DeviceToken =", fu.DeviceToken)
-    // qresult := q.Run(c)
+    fu := PushedTopstories{
+        TopStory: itemid,
+    }
+    //Check if pushed already
+    q := datastore.NewQuery("PushedTopstories").Filter("TopStory =", fu.TopStory)
+    qresult := q.Run(c)
 
+    for {
+            var pts PushedTopstories
+            _, err := qresult.Next(&pts)
+
+            if err == datastore.Done {
+                fmt.Fprintf(w, "Not in list! ID: " + fu.TopStory)
+
+                //Store device
+                key := datastore.NewIncompleteKey(c, "PushedTopstories", pushedTopstoriesKey(c))
+                _, err := datastore.Put(c, key, &fu)
+        
+                if err != nil {
+                    http.Error(w, err.Error(), http.StatusInternalServerError)
+                    return
+                }
+                break
+            }
+            
+            //Item found: goodbye
+            if err == nil {
+                break
+            }
+        }
 
     siteURL := "https://hacker-news.firebaseio.com/v0/item/"+itemid+".json?print=pretty"
     fmt.Fprintf(w, "\nurl " + siteURL + "\n%i", itemid)
